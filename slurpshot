@@ -1,0 +1,51 @@
+#!/bin/bash
+# Simple screenshot script, dependencies: grim, bemenu, imv, jq, slurp
+# Choose directory to save screenshots and viewer
+
+SHOTPATH=~/Bilder/screenshots
+VIEWER=/usr/bin/imv
+
+WINDOWS=`swaymsg -t get_tree | jq '.. | (.nodes? // empty)[] | select(.visible and .pid) | "\(.app_id) \(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)"'`
+FOCUSED=`swaymsg -t get_tree | jq '.. | (.nodes? // empty)[] | select(.focused and .pid) | .rect | "\(.x),\(.y) \(.width)x\(.height)"'`
+
+CHOICE=`bemenu -b -H 29 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Please select screenshot area:" << EOF
+Fullscreen
+Selection
+Focus
+$WINDOWS
+EOF`
+
+FILENAME="${SHOTPATH}/screenshot-$(date +'%Y-%m-%d-%H%M%S.png')"
+GRID=\"$(echo $CHOICE | awk ' {print $2,$3} ')
+
+if [ "$CHOICE" = Fullscreen ]
+then
+    grim "$FILENAME"
+elif [ "$CHOICE" = Selection ]
+then
+    grim -g "$(slurp)" "$FILENAME"
+elif [ "$CHOICE" = Focus ]
+then
+    grim -g "$(eval echo $FOCUSED)" "$FILENAME"
+else
+    grim -g "$(eval echo $GRID)" "$FILENAME"
+fi
+
+
+WAHL=`bemenu -b -H 29 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Screenshot taken" << EOF
+View
+Save
+Discard
+EOF`
+
+
+if [ $WAHL = View ]
+then
+	$VIEWER $FILENAME
+elif [ $WAHL = Discard ]
+then
+	rm $FILENAME
+else
+	true
+fi
+exit 0
