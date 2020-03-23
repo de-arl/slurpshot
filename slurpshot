@@ -3,7 +3,7 @@
 # Choose directory to save screenshots and viewer
 
 SHOTPATH=~/Bilder/screenshots
-VIEWER=/usr/bin/imv
+VIEWER=/usr/bin/imv-wayland
 
 WINDOWS=`swaymsg -t get_tree | jq '.. | (.nodes? // empty)[] | select(.visible and .pid) | "\(.app_id) \(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)"'`
 FOCUSED=`swaymsg -t get_tree | jq '.. | (.nodes? // empty)[] | select(.focused and .pid) | .rect | "\(.x),\(.y) \(.width)x\(.height)"'`
@@ -17,6 +17,9 @@ EOF`
 
 FILENAME="${SHOTPATH}/screenshot-$(date +'%Y-%m-%d-%H%M%S.png')"
 GRID=\"$(echo $CHOICE | awk ' {print $2,$3} ')
+
+# Name printed when viewing screenshot, adjust if you edit FILENAME
+FILENAME_SHORT=${FILENAME: -32}
 
 if [ "$CHOICE" = Fullscreen ]
 then
@@ -40,8 +43,22 @@ EOF`
 
 
 if [ $WAHL = View ]
-then
-	$VIEWER $FILENAME
+then	
+	$VIEWER $FILENAME &
+	WAHL2=`bemenu -b -H 29 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000  -p "${FILENAME_SHORT}"<< EOF
+	Save
+	Discard
+EOF`
+	if [ $WAHL2 = Discard ]
+	then
+	        rm $FILENAME &
+	        PID_VIEWER=$(pidof -s ${VIEWER})
+	        kill -9 ${PID_VIEWER}
+	else
+		PID_VIEWER=$(pidof -s ${VIEWER})
+		kill -9 ${PID_VIEWER}
+		true
+	fi
 elif [ $WAHL = Discard ]
 then
 	rm $FILENAME
