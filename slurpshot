@@ -2,13 +2,13 @@
 # Simple screenshot script, dependencies: grim, bemenu, imv, jq, slurp
 # Choose directory to save screenshots and viewer
 
-SHOTPATH=~/Bilder/screenshots
+SHOTPATH=$HOME
 VIEWER=/usr/bin/imv-wayland
 
 WINDOWS=`swaymsg -t get_tree | jq '.. | (.nodes? // empty)[] | select(.visible and .pid) | "\(.app_id) \(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)"'`
 FOCUSED=`swaymsg -t get_tree | jq '.. | (.nodes? // empty)[] | select(.focused and .pid) | .rect | "\(.x),\(.y) \(.width)x\(.height)"'`
 
-CHOICE=`bemenu -b -H 29 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Please select screenshot area:" << EOF
+CHOICE=`bemenu -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Please select screenshot area:" << EOF
 Fullscreen
 Selection
 Focus
@@ -35,18 +35,22 @@ else
 fi
 
 
-WAHL=`bemenu -b -H 29 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Screenshot taken" << EOF
+WAHL=`bemenu -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Screenshot taken" << EOF
 View
+Print and Save
+Print and Discard
 Save
 Discard
 EOF`
 
 
-if [ $WAHL = View ]
+if [ "$WAHL" = View ]
 then	
 	$VIEWER $FILENAME &
-	WAHL2=`bemenu -b -H 29 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000  -p "${FILENAME_SHORT}"<< EOF
+	WAHL2=`bemenu -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000  -p "${FILENAME_SHORT}"<< EOF
 	Save
+    Print and Save
+    Print and Discard
 	Discard
 EOF`
 	if [ $WAHL2 = Discard ]
@@ -54,14 +58,30 @@ EOF`
 	        rm $FILENAME &
 	        PID_VIEWER=$(pidof -s ${VIEWER})
 	        kill -9 ${PID_VIEWER}
+    elif [ "$WAHL2" = "Print and Save" ]
+    then
+            lpr $FILENAME &
+	        kill -9 ${PID_VIEWER}
+    elif [ "$WAHL2" = "Print and Discard" ]
+    then
+            lpr $FILENAME &
+	        rm $FILENAME &
+	        kill -9 ${PID_VIEWER}
 	else
 		PID_VIEWER=$(pidof -s ${VIEWER})
 		kill -9 ${PID_VIEWER}
 		true
 	fi
-elif [ $WAHL = Discard ]
+elif [ "$WAHL" = Discard ]
 then
 	rm $FILENAME
+elif [ "$WAHL" = "Print and Save" ]
+    then
+            lpr $FILENAME &
+ elif [ "$WAHL" = "Print and Discard" ]
+    then
+            lpr $FILENAME 
+	        rm $FILENAME &
 else
 	true
 fi

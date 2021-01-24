@@ -8,7 +8,7 @@ VIEWER=/usr/bin/imv-wayland
 WINDOWS=`swaymsg -t get_tree | jq '.. | (.nodes? // empty)[] | select(.visible and .pid) | "\(.app_id) \(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)"'`
 FOCUSED=`swaymsg -t get_tree | jq '.. | (.nodes? // empty)[] | select(.focused and .pid) | .rect | "\(.x),\(.y) \(.width)x\(.height)"'`
 
-CHOICE=`bemenu -b -H 29 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Bitte Bereich wählen:" << EOF
+CHOICE=`bemenu -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Bitte Bereich wählen:" << EOF
 Vollbild
 Auswahl
 Fokus
@@ -34,18 +34,22 @@ else
 fi
 
 
-WAHL=`bemenu -b -H 29 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Screenshot erstellt" << EOF
+WAHL=`bemenu -m all -b -H 29 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Screenshot erstellt" << EOF
 Öffnen
 Speichern
+Drucken und Speichern
+Drucken und Verwerfen
 Verwerfen
 EOF`
 
 
-if [ $WAHL = Öffnen ]
+if [ "$WAHL" = Öffnen ]
 then
 	$VIEWER $FILENAME &
-	WAHL2=`bemenu -b -H 29 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000  -p "${FILENAME_SHORT}"<< EOF
+	WAHL2=`bemenu -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000  -p "${FILENAME_SHORT}"<< EOF
 	Speichern
+    Drucken und Speichern
+    Drucken und Verwerfen
 	Verwerfen
 EOF`
 	if [ $WAHL2 = Verwerfen ]
@@ -53,11 +57,27 @@ EOF`
 		PID_VIEWER=$(pidof -s ${VIEWER}) 
 		rm $FILENAME &
 		kill -9 ${PID_VIEWER}
+    elif [ "$WAHL2" = "Drucken und Speichern" ]
+    then 
+        lpr $FILENAME &
+		kill -9 ${PID_VIEWER}
+    elif [ "$WAHL2" = "Drucken und Verwerfen" ]
+    then 
+        lpr $FILENAME 
+        rm $FILENAME & 
+		kill -9 ${PID_VIEWER}
 	else
 		PID_VIEWER=$(pidof -s ${VIEWER}) 
 		kill -9 ${PID_VIEWER}
 		true
 	fi
+elif [ "$WAHL" = "Drucken und Speichern" ]
+then 
+        lpr $FILENAME &
+elif [ "$WAHL" = "Drucken und Verwerfen" ]
+then 
+        lpr $FILENAME 
+        rm $FILENAME
 elif [ $WAHL = Verwerfen ]
 then
 	rm $FILENAME
