@@ -7,8 +7,6 @@ You can easily edit it to change the screenshot directory, the viewer or anythin
 
 It depends on bemenu, grim, imv, jq and slurp
 
-Slurpshot is designed for the sway-mindark theme. You may edit bemenu parameters in the script to make the design suite your setup (see man bemenu).
+You may edit bemenu parameters in the script to make the design suite your setup. The menu can be easily enlarged setting the BEMENU_SCALE environment variable. (See man bemenu.)
 
-Currently the menu displays coordinates and process names for each container to select, this is not very beautiful but neccesary to identify the correct container. If someone has a better solution for that, please commit.
-
-Munich, Jan 2021, de-arl
+Munich, Feb 2024, de-arl

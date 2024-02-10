@@ -8,12 +8,15 @@ VIEWER=/usr/bin/imv-wayland
 WINDOWS=`swaymsg -t get_tree | jq '.. | (.nodes? // empty)[] | select(.visible and .pid) | "\(.app_id) \(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)"'`
 FOCUSED=`swaymsg -t get_tree | jq '.. | (.nodes? // empty)[] | select(.focused and .pid) | .rect | "\(.x),\(.y) \(.width)x\(.height)"'`
 
-CHOICE=`bemenu -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Please select screenshot area:" << EOF
+CHOICE=`bemenu -n -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Please select screenshot area:" << EOF
 Fullscreen
 Selection
 Focus
 $WINDOWS
+Abort
 EOF`
+
+if [ $? = 1 ]; then exit 0; fi
 
 FILENAME="${SHOTPATH}/screenshot-$(date +'%Y-%m-%d-%H%M%S.png')"
 GRID=\"$(echo $CHOICE | awk ' {print $2,$3} ')
@@ -30,12 +33,15 @@ then
 elif [ "$CHOICE" = Focus ]
 then
     grim -g "$(eval echo $FOCUSED)" "$FILENAME"
+elif [ "$CHOICE" = Abort ]
+then
+    exit 0
 else
     grim -g "$(eval echo $GRID)" "$FILENAME"
 fi
 
 
-WAHL=`bemenu -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Screenshot taken" << EOF
+WAHL=`bemenu -n -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Screenshot taken" << EOF
 View
 Print and Save
 Print and Discard
@@ -43,16 +49,23 @@ Save
 Discard
 EOF`
 
+if [ $? = 1 ]; then rm $FILENAME & exit 0; fi
 
 if [ "$WAHL" = View ]
 then	
 	$VIEWER $FILENAME &
-	WAHL2=`bemenu -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000  -p "${FILENAME_SHORT}"<< EOF
+	WAHL2=`bemenu -n -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000  -p "${FILENAME_SHORT}"<< EOF
 	Save
     Print and Save
     Print and Discard
 	Discard
 EOF`
+  if [ $? = 1 ]; then 
+    rm $FILENAME &
+    PID_VIEWER=$(pidof -s ${VIEWER})
+    kill -9 ${PID_VIEWER};
+    exit 0; 
+  fi
 	if [ $WAHL2 = Discard ]
 	then
 	        rm $FILENAME &

@@ -8,12 +8,15 @@ VIEWER=/usr/bin/imv-wayland
 WINDOWS=`swaymsg -t get_tree | jq '.. | (.nodes? // empty)[] | select(.visible and .pid) | "\(.app_id) \(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)"'`
 FOCUSED=`swaymsg -t get_tree | jq '.. | (.nodes? // empty)[] | select(.focused and .pid) | .rect | "\(.x),\(.y) \(.width)x\(.height)"'`
 
-CHOICE=`bemenu -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Bitte Bereich wählen:" << EOF
+CHOICE=`bemenu -n -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Bitte Bereich wählen:" << EOF
 Vollbild
 Auswahl
 Fokus
 $WINDOWS
+Abbrechen
 EOF`
+
+if [ $? = 1 ]; then exit 0; fi
 
 FILENAME="${SHOTPATH}/screenshot-$(date +'%Y-%m-%d-%H%M%S.png')"
 GRID=\"$(echo $CHOICE | awk ' {print $2,$3} ')
@@ -29,12 +32,15 @@ then
 elif [ "$CHOICE" = Fokus ]
 then
     grim -g "$(eval echo $FOCUSED)" "$FILENAME"
+elif [ "$CHOICE" = Abbrechen ]
+then
+    exit 0
 else
     grim -g "$(eval echo $GRID)" "$FILENAME"
 fi
 
 
-WAHL=`bemenu -m all -b -H 29 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Screenshot erstellt" << EOF
+WAHL=`bemenu -n -m all -b -H 29 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000 -p "Screenshot erstellt" << EOF
 Öffnen
 Speichern
 Drucken und Speichern
@@ -42,16 +48,23 @@ Drucken und Verwerfen
 Verwerfen
 EOF`
 
+if [ $? = 1 ]; then rm $FILENAME & exit 0; fi
 
 if [ "$WAHL" = Öffnen ]
 then
 	$VIEWER $FILENAME &
-	WAHL2=`bemenu -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000  -p "${FILENAME_SHORT}"<< EOF
+	WAHL2=`bemenu -n -m all -b -H 11 --tf=#ffffff --ff=#ffffff --hf=#4c7899 --fb=#000000 --tb=#000000 --nb=#000000 --hb=#000000  -p "${FILENAME_SHORT}"<< EOF
 	Speichern
     Drucken und Speichern
     Drucken und Verwerfen
 	Verwerfen
 EOF`
+  if [ $? = 1 ]; then 
+    rm $FILENAME &
+    PID_VIEWER=$(pidof -s ${VIEWER})
+    kill -9 ${PID_VIEWER};
+    exit 0; 
+  fi
 	if [ $WAHL2 = Verwerfen ]
 	then
 		PID_VIEWER=$(pidof -s ${VIEWER}) 
